@@ -1,43 +1,16 @@
+
 import { pipeline } from '@huggingface/transformers';
-import { FUNCTION_LIBRARY, FunctionDefinition } from './functionLibrary';
+import { FUNCTION_LIBRARY } from './functionLibrary';
 import { v4 as uuidv4 } from 'uuid';
 
-export interface FunctionCall {
-  id: string;
-  functionId: string;
-  name: string;
-  inputs: Record<string, any>;
-  outputs?: Record<string, any>;
-  executionOrder: number;
-  dependencies: string[];
-  status: 'pending' | 'running' | 'completed' | 'failed';
-  description: string;
-}
-
-export interface QueryAnalysis {
-  intent: string;
-  entities: string[];
-  requiredFunctions: string[];
-  complexity: 'simple' | 'medium' | 'complex';
-  confidence: number;
-}
-
-export interface ExecutionPlan {
-  id: string;
-  query: string;
-  analysis: QueryAnalysis;
-  functionCalls: FunctionCall[];
-  estimatedDuration: number;
-  createdAt: Date;
-  status: 'planning' | 'ready' | 'executing' | 'completed' | 'failed';
-}
-
 class AIPipelineEngine {
-  private textClassifier: any = null;
-  private textGenerator: any = null;
-  private isInitialized = false;
+  constructor() {
+    this.textClassifier = null;
+    this.textGenerator = null;
+    this.isInitialized = false;
+  }
 
-  async initialize(): Promise<void> {
+  async initialize() {
     if (this.isInitialized) return;
 
     console.log('Initializing AI Pipeline Engine...');
@@ -59,7 +32,7 @@ class AIPipelineEngine {
     }
   }
 
-  async processQuery(query: string): Promise<ExecutionPlan> {
+  async processQuery(query) {
     if (!this.isInitialized) {
       await this.initialize();
     }
@@ -73,7 +46,7 @@ class AIPipelineEngine {
     const functionCalls = await this.generateFunctionSequence(query, analysis);
     
     // Create execution plan
-    const executionPlan: ExecutionPlan = {
+    const executionPlan = {
       id: uuidv4(),
       query,
       analysis,
@@ -87,7 +60,7 @@ class AIPipelineEngine {
     return executionPlan;
   }
 
-  private async analyzeQuery(query: string): Promise<QueryAnalysis> {
+  async analyzeQuery(query) {
     const lowerQuery = query.toLowerCase();
     
     // Intent classification using keyword matching and patterns
@@ -111,7 +84,7 @@ class AIPipelineEngine {
     };
   }
 
-  private classifyIntent(query: string): string {
+  classifyIntent(query) {
     const intentPatterns = {
       'data_retrieval': ['get', 'retrieve', 'fetch', 'find', 'show', 'list'],
       'data_analysis': ['analyze', 'calculate', 'summarize', 'aggregate', 'total', 'sum'],
@@ -130,8 +103,8 @@ class AIPipelineEngine {
     return 'general';
   }
 
-  private extractEntities(query: string): string[] {
-    const entities: string[] = [];
+  extractEntities(query) {
+    const entities = [];
     
     // Date entities
     const datePatterns = [/\b\d{4}-\d{2}-\d{2}\b/, /\b\w+\s+\d{4}\b/, /\blast\s+\w+\b/];
@@ -161,8 +134,8 @@ class AIPipelineEngine {
     return entities;
   }
 
-  private identifyRequiredFunctions(query: string, intent: string): string[] {
-    const functionMappings: Record<string, string[]> = {
+  identifyRequiredFunctions(query, intent) {
+    const functionMappings = {
       'data_retrieval': ['get_invoices', 'get_customers', 'get_orders', 'get_products', 'get_sales_data'],
       'data_analysis': ['calculate_total', 'aggregate_data', 'filter_data', 'sort_data'],
       'communication': ['send_email', 'send_sms', 'create_notification'],
@@ -171,7 +144,7 @@ class AIPipelineEngine {
     };
 
     const baseFunctions = functionMappings[intent] || [];
-    const requiredFunctions: string[] = [];
+    const requiredFunctions = [];
 
     // Specific function identification based on keywords
     const functionKeywords = {
@@ -194,7 +167,7 @@ class AIPipelineEngine {
     return [...new Set([...baseFunctions, ...requiredFunctions])];
   }
 
-  private assessComplexity(functionCount: number, entityCount: number): 'simple' | 'medium' | 'complex' {
+  assessComplexity(functionCount, entityCount) {
     const totalComplexity = functionCount + entityCount;
     
     if (totalComplexity <= 3) return 'simple';
@@ -202,8 +175,8 @@ class AIPipelineEngine {
     return 'complex';
   }
 
-  private async generateFunctionSequence(query: string, analysis: QueryAnalysis): Promise<FunctionCall[]> {
-    const functionCalls: FunctionCall[] = [];
+  async generateFunctionSequence(query, analysis) {
+    const functionCalls = [];
     let executionOrder = 1;
 
     // Create function calls based on identified requirements
@@ -211,7 +184,7 @@ class AIPipelineEngine {
       const functionDef = FUNCTION_LIBRARY.find(f => f.id === functionId);
       if (!functionDef) continue;
 
-      const functionCall: FunctionCall = {
+      const functionCall = {
         id: uuidv4(),
         functionId,
         name: functionDef.name,
@@ -232,12 +205,8 @@ class AIPipelineEngine {
     return functionCalls;
   }
 
-  private generateInputsForFunction(
-    functionDef: FunctionDefinition, 
-    entities: string[], 
-    query: string
-  ): Record<string, any> {
-    const inputs: Record<string, any> = {};
+  generateInputsForFunction(functionDef, entities, query) {
+    const inputs = {};
 
     // Generate inputs based on function requirements and extracted entities
     functionDef.inputs.forEach(inputDef => {
@@ -257,7 +226,7 @@ class AIPipelineEngine {
     return inputs;
   }
 
-  private parseEntityValue(entity: string, expectedType: string): any {
+  parseEntityValue(entity, expectedType) {
     const [type, value] = entity.split(':');
     
     switch (expectedType) {
@@ -274,7 +243,7 @@ class AIPipelineEngine {
     }
   }
 
-  private generateDefaultValue(type: string, name: string): any {
+  generateDefaultValue(type, name) {
     switch (type) {
       case 'string':
         if (name.includes('date')) return new Date().toISOString().split('T')[0];
@@ -293,8 +262,8 @@ class AIPipelineEngine {
     }
   }
 
-  private calculateDependencies(functionId: string, existingCalls: FunctionCall[]): string[] {
-    const dependencies: string[] = [];
+  calculateDependencies(functionId, existingCalls) {
+    const dependencies = [];
     
     // Define common dependency patterns
     const dependencyRules = {
@@ -316,7 +285,7 @@ class AIPipelineEngine {
     return dependencies;
   }
 
-  private optimizeExecutionOrder(functionCalls: FunctionCall[]): void {
+  optimizeExecutionOrder(functionCalls) {
     // Sort functions based on dependencies
     const sorted = [...functionCalls].sort((a, b) => {
       if (a.dependencies.includes(b.id)) return 1;
@@ -330,7 +299,7 @@ class AIPipelineEngine {
     });
   }
 
-  private estimateExecutionTime(functionCalls: FunctionCall[]): number {
+  estimateExecutionTime(functionCalls) {
     // Estimate execution time based on function complexity
     const baseTime = 1000; // 1 second base time
     const complexityMultiplier = {
@@ -342,7 +311,7 @@ class AIPipelineEngine {
     return functionCalls.length * baseTime * complexityMultiplier['medium'];
   }
 
-  async simulateExecution(executionPlan: ExecutionPlan): Promise<ExecutionPlan> {
+  async simulateExecution(executionPlan) {
     const updatedPlan = { ...executionPlan };
     updatedPlan.status = 'executing';
 
@@ -365,8 +334,8 @@ class AIPipelineEngine {
     return updatedPlan;
   }
 
-  private generateMockOutputs(functionDef: FunctionDefinition): Record<string, any> {
-    const outputs: Record<string, any> = {};
+  generateMockOutputs(functionDef) {
+    const outputs = {};
 
     functionDef.outputs.forEach(outputDef => {
       switch (outputDef.type) {
