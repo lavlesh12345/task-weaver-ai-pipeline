@@ -1,5 +1,4 @@
-
-import { pipeline, Pipeline } from '@huggingface/transformers';
+import { pipeline } from '@huggingface/transformers';
 import { FUNCTION_LIBRARY, FunctionDefinition } from './functionLibrary';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -34,8 +33,8 @@ export interface ExecutionPlan {
 }
 
 class AIPipelineEngine {
-  private textClassifier: Pipeline | null = null;
-  private textGenerator: Pipeline | null = null;
+  private textClassifier: any = null;
+  private textGenerator: any = null;
   private isInitialized = false;
 
   async initialize(): Promise<void> {
@@ -47,14 +46,7 @@ class AIPipelineEngine {
       // Initialize text classification pipeline for intent recognition
       this.textClassifier = await pipeline(
         'text-classification',
-        'microsoft/DialoGPT-medium',
-        { device: 'webgpu' }
-      );
-
-      // Initialize text generation pipeline for function sequencing
-      this.textGenerator = await pipeline(
-        'text-generation',
-        'microsoft/DialoGPT-medium',
+        'Xenova/distilbert-base-uncased-finetuned-sst-2-english',
         { device: 'webgpu' }
       );
 
